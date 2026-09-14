@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
@@ -105,10 +106,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     try {
-      // ----------------------------------------------------------
-      // GET CUSTOMER + ADDRESS FROM ONE API
-      // ----------------------------------------------------------
-
       final response = await ApiService.getCustomerProfile(
         customerId: customerId,
       );
@@ -120,7 +117,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Map<String, dynamic>? customer;
 
       if (response['customer'] is Map) {
-        customer = Map<String, dynamic>.from(response['customer'] as Map);
+        customer = Map<String, dynamic>.from(
+          response['customer'] as Map,
+        );
       }
 
       // ----------------------------------------------------------
@@ -130,26 +129,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Map<String, dynamic>? address;
 
       if (response['address'] is Map) {
-        address = Map<String, dynamic>.from(response['address'] as Map);
+        address = Map<String, dynamic>.from(
+          response['address'] as Map,
+        );
       }
 
       // ----------------------------------------------------------
-      // VALIDATE CUSTOMER RESPONSE
+      // VALIDATE CUSTOMER
       // ----------------------------------------------------------
 
       if (customer == null) {
-        throw Exception('Customer information was not returned by server.');
+        throw Exception(
+          'Customer information was not returned by server.',
+        );
       }
 
-      final name = customer['full_name']?.toString().trim() ?? '';
+      final name =
+          customer['full_name']?.toString().trim() ?? '';
 
-      final mobile = customer['mobile']?.toString().trim() ?? '';
+      final mobile =
+          customer['mobile']?.toString().trim() ?? '';
 
-      final email = customer['email']?.toString().trim() ?? '';
+      final email =
+          customer['email']?.toString().trim() ?? '';
 
       // ----------------------------------------------------------
-      // SET ADDRESS CONTROLLERS
+      // UPDATE CONTROLLERS
       // ----------------------------------------------------------
+
+      _nameController.text = name;
+      _mobileController.text = mobile;
+      _emailController.text = email;
 
       _setAddressControllers(address);
 
@@ -160,16 +170,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _customer = customer;
         _address = address;
-
-        _nameController.text = name;
-        _mobileController.text = mobile;
-        _emailController.text = email;
-
         _isLoading = false;
+        _isEditing = false;
       });
 
       // ----------------------------------------------------------
-      // KEEP SESSION NAME SYNCHRONIZED
+      // KEEP SESSION NAME UPDATED
       // ----------------------------------------------------------
 
       if (name.isNotEmpty) {
@@ -186,26 +192,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
   }
+
   // ============================================================
   // SET ADDRESS CONTROLLERS
   // ============================================================
 
   void _setAddressControllers(Map<String, dynamic>? address) {
-    _houseController.text = address?['house_flat_number']?.toString() ?? '';
+    _houseController.text =
+        address?['house_flat_number']?.toString() ?? '';
 
-    _apartmentController.text = address?['apartment_name']?.toString() ?? '';
+    _apartmentController.text =
+        address?['apartment_name']?.toString() ?? '';
 
-    _streetController.text = address?['street_area']?.toString() ?? '';
+    _streetController.text =
+        address?['street_area']?.toString() ?? '';
 
-    _landmarkController.text = address?['landmark']?.toString() ?? '';
+    _landmarkController.text =
+        address?['landmark']?.toString() ?? '';
 
-    _cityController.text = address?['city']?.toString() ?? '';
+    _cityController.text =
+        address?['city']?.toString() ?? '';
 
-    _pincodeController.text = address?['pincode']?.toString() ?? '';
+    _pincodeController.text =
+        address?['pincode']?.toString() ?? '';
   }
 
   // ============================================================
-  // ERROR CLEANUP
+  // CLEAN ERROR MESSAGE
   // ============================================================
 
   String _cleanErrorMessage(String error) {
@@ -251,11 +264,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     if (!RegExp(r'^\d{10}$').hasMatch(mobile)) {
-      _showMessage('Mobile number must contain exactly 10 digits.');
+      _showMessage(
+        'Mobile number must contain exactly 10 digits.',
+      );
       return;
     }
 
-    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    final emailRegex =
+        RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
     if (!emailRegex.hasMatch(email)) {
       _showMessage('Please enter a valid email address.');
@@ -267,17 +283,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // ----------------------------------------------------------
 
     if (house.isEmpty) {
-      _showMessage('Please enter your house or flat number.');
+      _showMessage(
+        'Please enter your house or flat number.',
+      );
       return;
     }
 
     if (apartment.isEmpty) {
-      _showMessage('Please enter your apartment name.');
+      _showMessage(
+        'Please enter your apartment name.',
+      );
       return;
     }
 
     if (street.isEmpty) {
-      _showMessage('Please enter your street or area.');
+      _showMessage(
+        'Please enter your street or area.',
+      );
       return;
     }
 
@@ -287,20 +309,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     if (!RegExp(r'^\d{6}$').hasMatch(pincode)) {
-      _showMessage('Pincode must contain exactly 6 digits.');
+      _showMessage(
+        'Pincode must contain exactly 6 digits.',
+      );
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isSaving = true;
+      });
+    }
 
     try {
       // --------------------------------------------------------
       // UPDATE CUSTOMER
       // --------------------------------------------------------
 
-      final customerResponse = await ApiService.updateCustomer(
+      final customerResponse =
+          await ApiService.updateCustomer(
         customerId: customerId,
         fullName: name,
         mobile: mobile,
@@ -319,12 +346,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // UPDATE OR CREATE ADDRESS
       // --------------------------------------------------------
 
-      final addressId = _parseInt(_address?['address_id']);
+      final addressId =
+          _parseInt(_address?['address_id']);
 
-      Map<String, dynamic> addressResponse;
+      late final Map<String, dynamic> addressResponse;
 
       if (addressId != null && addressId > 0) {
-        addressResponse = await ApiService.updateAddress(
+        addressResponse =
+            await ApiService.updateAddress(
           addressId: addressId,
           houseFlatNumber: house,
           apartmentName: apartment,
@@ -334,7 +363,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           pincode: pincode,
         );
       } else {
-        addressResponse = await ApiService.createAddress(
+        addressResponse =
+            await ApiService.createAddress(
           customerId: customerId,
           houseFlatNumber: house,
           apartmentName: apartment,
@@ -374,7 +404,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // UPDATE SESSION NAME
       // --------------------------------------------------------
 
-      CustomerSession.instance.updateName(name);
+      await CustomerSession.instance.updateName(name);
 
       _showMessage('Profile updated successfully.');
     } catch (error) {
@@ -386,34 +416,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isSaving = false;
       });
 
-      _showMessage(_cleanErrorMessage(error.toString()));
+      _showMessage(
+        _cleanErrorMessage(error.toString()),
+      );
     }
   }
 
   // ============================================================
-  // CANCEL EDIT
+  // CANCEL EDITING
   // ============================================================
 
   void _cancelEditing() {
     final customer = _customer;
 
-    _nameController.text = customer?['full_name']?.toString() ?? '';
+    _nameController.text =
+        customer?['full_name']?.toString() ?? '';
 
-    _mobileController.text = customer?['mobile']?.toString() ?? '';
+    _mobileController.text =
+        customer?['mobile']?.toString() ?? '';
 
-    _emailController.text = customer?['email']?.toString() ?? '';
+    _emailController.text =
+        customer?['email']?.toString() ?? '';
 
     _setAddressControllers(_address);
+
+    FocusScope.of(context).unfocus();
+
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       _isEditing = false;
     });
-
-    FocusScope.of(context).unfocus();
   }
 
   // ============================================================
-  // MESSAGE
+  // SHOW MESSAGE
   // ============================================================
 
   void _showMessage(String message) {
@@ -424,7 +463,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
   }
 
@@ -454,11 +496,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildHeader(),
-        Expanded(child: _buildBody()),
-      ],
+    // IMPORTANT:
+    // Material provides the Material ancestor required by
+    // TextField, InputDecoration, SnackBar, ElevatedButton, etc.
+    return Material(
+      color: AppColors.background,
+      child: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: _buildBody(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -486,7 +538,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-          if (!_isLoading && _errorMessage == null && _customer != null)
+
+          if (!_isLoading &&
+              _errorMessage == null &&
+              _customer != null)
             TextButton.icon(
               onPressed: _isSaving
                   ? null
@@ -500,10 +555,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
                     },
               icon: Icon(
-                _isEditing ? Icons.close_rounded : Icons.edit_outlined,
+                _isEditing
+                    ? Icons.close_rounded
+                    : Icons.edit_outlined,
                 size: 18,
               ),
-              label: Text(_isEditing ? 'Cancel' : 'Edit'),
+              label: Text(
+                _isEditing ? 'Cancel' : 'Edit',
+              ),
             ),
         ],
       ),
@@ -516,7 +575,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
     }
 
     if (_errorMessage != null) {
@@ -531,7 +592,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onRefresh: _loadProfile,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
+        padding: const EdgeInsets.fromLTRB(
+          16,
+          4,
+          16,
+          30,
+        ),
         children: [
           _buildProfileHeader(),
 
@@ -545,9 +611,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 20),
 
-          if (_isEditing) _buildSaveButton(),
+          if (_isEditing)
+            _buildSaveButton(),
 
-          if (!_isEditing) _buildAccountInfo(),
+          if (!_isEditing)
+            _buildAccountInfo(),
         ],
       ),
     );
@@ -558,9 +626,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ============================================================
 
   Widget _buildProfileHeader() {
-    final name = _customer?['full_name']?.toString().trim() ?? '';
+    final name =
+        _customer?['full_name']?.toString().trim() ?? '';
 
-    final firstLetter = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+    final firstLetter =
+        name.isNotEmpty ? name[0].toUpperCase() : 'U';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -581,7 +651,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: 82,
             height: 82,
             decoration: BoxDecoration(
-              color: AppColors.purple.withValues(alpha: 0.10),
+              color:
+                  AppColors.purple.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -680,7 +751,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: 'Email Address',
             icon: Icons.email_outlined,
             controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
+            keyboardType:
+                TextInputType.emailAddress,
             enabled: _isEditing,
           ),
         ],
@@ -724,7 +796,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: 'House / Flat Number',
             icon: Icons.home_outlined,
             controller: _houseController,
-            keyboardType: TextInputType.streetAddress,
+            keyboardType:
+                TextInputType.streetAddress,
             enabled: _isEditing,
           ),
 
@@ -734,7 +807,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: 'Apartment Name',
             icon: Icons.apartment_outlined,
             controller: _apartmentController,
-            keyboardType: TextInputType.streetAddress,
+            keyboardType:
+                TextInputType.streetAddress,
             enabled: _isEditing,
           ),
 
@@ -744,7 +818,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: 'Street / Area',
             icon: Icons.location_on_outlined,
             controller: _streetController,
-            keyboardType: TextInputType.streetAddress,
+            keyboardType:
+                TextInputType.streetAddress,
             enabled: _isEditing,
           ),
 
@@ -754,7 +829,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: 'Landmark',
             icon: Icons.place_outlined,
             controller: _landmarkController,
-            keyboardType: TextInputType.streetAddress,
+            keyboardType:
+                TextInputType.streetAddress,
             enabled: _isEditing,
           ),
 
@@ -764,7 +840,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: 'City',
             icon: Icons.location_city_outlined,
             controller: _cityController,
-            keyboardType: TextInputType.streetAddress,
+            keyboardType:
+                TextInputType.streetAddress,
             enabled: _isEditing,
           ),
 
@@ -772,7 +849,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           _buildField(
             label: 'Pincode',
-            icon: Icons.markunread_mailbox_outlined,
+            icon:
+                Icons.markunread_mailbox_outlined,
             controller: _pincodeController,
             keyboardType: TextInputType.number,
             enabled: _isEditing,
@@ -800,6 +878,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       enabled: enabled,
       keyboardType: keyboardType,
       maxLength: maxLength,
+      textInputAction: TextInputAction.next,
       style: AppTextStyles.of(
         figmaSize: 14,
         weight: FontWeight.w500,
@@ -807,28 +886,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       decoration: InputDecoration(
         labelText: label,
+
         prefixIcon: Icon(
           icon,
-          color: enabled ? AppColors.purple : AppColors.textGray,
+          color: enabled
+              ? AppColors.purple
+              : AppColors.textGray,
         ),
+
         counterText: '',
+
         filled: true,
-        fillColor: enabled ? AppColors.background : Colors.grey.shade50,
+
+        fillColor: enabled
+            ? AppColors.background
+            : Colors.grey.shade50,
+
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
+
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: Colors.grey.shade200,
+          ),
         ),
+
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.purple, width: 1.4),
+          borderSide: BorderSide(
+            color: AppColors.purple,
+            width: 1.4,
+          ),
         ),
+
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: Colors.grey.shade200,
+          ),
         ),
       ),
     );
@@ -841,8 +939,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSaveButton() {
     return SizedBox(
       height: 52,
+      width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: _isSaving ? null : _saveProfile,
+        onPressed: _isSaving
+            ? null
+            : _saveProfile,
         icon: _isSaving
             ? const SizedBox(
                 width: 18,
@@ -852,8 +953,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: Colors.white,
                 ),
               )
-            : const Icon(Icons.save_outlined),
-        label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
+            : const Icon(
+                Icons.save_outlined,
+              ),
+        label: Text(
+          _isSaving
+              ? 'Saving...'
+              : 'Save Changes',
+        ),
       ),
     );
   }
@@ -871,13 +978,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.verified_user_outlined, color: AppColors.purple, size: 24),
+          Icon(
+            Icons.verified_user_outlined,
+            color: AppColors.purple,
+            size: 24,
+          ),
 
           const SizedBox(width: 12),
 
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Text(
                   'Account Active',
@@ -915,7 +1027,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.center,
           children: [
             Icon(
               Icons.person_outline_rounded,
@@ -961,7 +1074,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.center,
           children: [
             Icon(
               Icons.cloud_off_outlined,
@@ -984,7 +1098,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 8),
 
             Text(
-              _errorMessage ?? 'Something went wrong.',
+              _errorMessage ??
+                  'Something went wrong.',
               textAlign: TextAlign.center,
               style: AppTextStyles.of(
                 figmaSize: 13,
@@ -997,8 +1112,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             ElevatedButton.icon(
               onPressed: _loadProfile,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try Again'),
+              icon: const Icon(
+                Icons.refresh_rounded,
+              ),
+              label: const Text(
+                'Try Again',
+              ),
             ),
           ],
         ),
