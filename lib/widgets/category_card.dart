@@ -19,6 +19,7 @@ class CategoryCard extends StatelessWidget {
     this.gradientColors,
     this.badgeText,
     this.iconAnimationDelay = Duration.zero,
+    this.minCardHeight = 148,
   }) : assert(
          iconAsset != null || iconWidget != null,
          'Provide either iconAsset or iconWidget',
@@ -51,6 +52,10 @@ class CategoryCard extends StatelessWidget {
   /// of cards pulses as a staggered wave rather than everything in lockstep.
   final Duration iconAnimationDelay;
 
+  /// Minimum card height — scaled up by the caller on tall screens so this
+  /// card grows to use the extra vertical space instead of leaving it blank.
+  final double minCardHeight;
+
   bool get _highlighted => gradientColors != null;
 
   @override
@@ -59,7 +64,7 @@ class CategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 148),
+        constraints: BoxConstraints(minHeight: minCardHeight),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
           color: _highlighted ? null : bgColor,

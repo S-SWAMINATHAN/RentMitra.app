@@ -100,52 +100,77 @@ class _HomeScreenState extends State<HomeScreen>
                   children: [
                     _buildAppBar(),
                     Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.fromLTRB(
-                          AppTextStyles.fig(16),
-                          0,
-                          AppTextStyles.fig(16),
-                          AppTextStyles.fig(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _HeroBanner(onExplore: _scrollToCategories),
-                            SizedBox(height: AppTextStyles.fig(14)),
-                            KeyedSubtree(
-                              key: _categorySectionKey,
-                              child: _sectionTitle('Shop by Category'),
+                      child: LayoutBuilder(
+                        builder: (context, viewportConstraints) {
+                          // Grows the cards and inter-section gaps (never
+                          // shrinks them) so the page's own content fills a
+                          // tall phone screen instead of leaving dead space
+                          // below it — capped so very tall/foldable screens
+                          // don't blow the design out of proportion.
+                          const referenceHeight = 640.0;
+                          final heightScale =
+                              (viewportConstraints.maxHeight /
+                                      referenceHeight)
+                                  .clamp(1.0, 1.4);
+
+                          return SingleChildScrollView(
+                            padding: EdgeInsets.fromLTRB(
+                              AppTextStyles.fig(16),
+                              0,
+                              AppTextStyles.fig(16),
+                              AppTextStyles.fig(16),
                             ),
-                            // Fixed (not fig-scaled) so it reliably clears
-                            // the Combo Plans card's "Best Value" badge,
-                            // which floats above that card's top edge.
-                            const SizedBox(height: 22),
-                            _sectionCategoryGrid(),
-                            SizedBox(height: AppTextStyles.fig(20)),
-                            IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Expanded(
-                                    child: PromoBanner(
-                                      onViewCombos: _openCombos,
-                                      startingPrice: _comboStartingPrice(
-                                        context,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _HeroBanner(onExplore: _scrollToCategories),
+                                SizedBox(
+                                  height: AppTextStyles.fig(14) * heightScale,
+                                ),
+                                KeyedSubtree(
+                                  key: _categorySectionKey,
+                                  child: _sectionTitle('Shop by Category'),
+                                ),
+                                // Fixed (not fig-scaled) so it reliably
+                                // clears the Combo Plans card's "Best Value"
+                                // badge, which floats above that card's top
+                                // edge — still scales up (never down) with
+                                // the page.
+                                SizedBox(height: 22 * heightScale),
+                                _sectionCategoryGrid(heightScale),
+                                SizedBox(
+                                  height: AppTextStyles.fig(20) * heightScale,
+                                ),
+                                IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: PromoBanner(
+                                          onViewCombos: _openCombos,
+                                          startingPrice: _comboStartingPrice(
+                                            context,
+                                          ),
+                                          stretchToFill: true,
+                                          minHeight: 215 * heightScale,
+                                        ),
                                       ),
-                                      stretchToFill: true,
-                                    ),
+                                      SizedBox(width: AppTextStyles.fig(10)),
+                                      Expanded(
+                                        child: HelpCardLarge(
+                                          onWhatsApp:
+                                              launchSupportWhatsAppChat,
+                                          minHeight: 215 * heightScale,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  SizedBox(width: AppTextStyles.fig(10)),
-                                  Expanded(
-                                    child: HelpCardLarge(
-                                      onWhatsApp: launchSupportWhatsAppChat,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     ),
                     AppBottomNavBar(
@@ -244,8 +269,9 @@ class _HomeScreenState extends State<HomeScreen>
     return rent == null ? null : formatRupees(rent);
   }
 
-  Widget _sectionCategoryGrid() {
+  Widget _sectionCategoryGrid(double heightScale) {
     final pricing = context.watch<PricingProvider>();
+    final cardMinHeight = 148 * heightScale;
 
     final acPrice = pricing.lowestRentAmong([
       CheckoutProduct.acOneTon.variantId,
@@ -274,6 +300,7 @@ class _HomeScreenState extends State<HomeScreen>
               priceColor: AppColors.categoryBlue,
               bgColor: AppColors.bgCardPurple,
               iconAnimationDelay: const Duration(milliseconds: 0),
+              minCardHeight: cardMinHeight,
               onTap: () => context.push('/ac'),
             ),
           ),
@@ -287,6 +314,7 @@ class _HomeScreenState extends State<HomeScreen>
               priceColor: AppColors.categoryGreen,
               bgColor: AppColors.bgCardNeutral,
               iconAnimationDelay: const Duration(milliseconds: 150),
+              minCardHeight: cardMinHeight,
               onTap: () => context.push('/refrigerator'),
             ),
           ),
@@ -300,6 +328,7 @@ class _HomeScreenState extends State<HomeScreen>
               priceColor: AppColors.categoryOrange,
               bgColor: AppColors.bgCardPeach,
               iconAnimationDelay: const Duration(milliseconds: 300),
+              minCardHeight: cardMinHeight,
               onTap: () => context.push('/washing-machine'),
             ),
           ),
@@ -318,6 +347,7 @@ class _HomeScreenState extends State<HomeScreen>
               ],
               badgeText: 'Best Value',
               iconAnimationDelay: const Duration(milliseconds: 450),
+              minCardHeight: cardMinHeight,
               onTap: _openCombos,
             ),
           ),

@@ -8,14 +8,18 @@ import '../theme/app_text_styles.dart';
 /// row so both cards share one height and their buttons line up flush to
 /// the bottom.
 class HelpCardLarge extends StatelessWidget {
-  const HelpCardLarge({super.key, this.onWhatsApp});
+  const HelpCardLarge({super.key, this.onWhatsApp, this.minHeight = 215});
 
   final VoidCallback? onWhatsApp;
+
+  /// Minimum card height — scaled up by the caller on tall screens so this
+  /// card grows to use the extra vertical space instead of leaving it blank.
+  final double minHeight;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 215),
+      constraints: BoxConstraints(minHeight: minHeight),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.helpCardBg,

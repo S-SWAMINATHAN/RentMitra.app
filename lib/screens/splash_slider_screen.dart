@@ -1,23 +1,13 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../widgets/animated_feature_badge.dart';
-import '../widgets/dot_indicator.dart';
 import '../widgets/floating_art.dart';
 import '../widgets/premium_cta_button.dart';
-import '../widgets/reveal_text.dart';
-import '../widgets/skip_button.dart';
 
-/// Splash carousel — the full-ecosystem hero first, then AC / Washing
-/// Machine / Refrigerator deep-dives — each with its own headline, feature
-/// badges, floating product art and tagline. Auto-plays as an ambient
-/// cinematic showcase until the visitor swipes or taps, at which point they
-/// take full control; continuous parallax/fade/scale/blur ties every page
-/// transition — auto or manual — to the same motion system.
+/// Splash screen — a single static hero introducing the app, with a CTA
+/// straight into Home.
 class SplashSliderScreen extends StatefulWidget {
   const SplashSliderScreen({super.key});
 
@@ -25,265 +15,19 @@ class SplashSliderScreen extends StatefulWidget {
   State<SplashSliderScreen> createState() => _SplashSliderScreenState();
 }
 
-class _SlideData {
-  const _SlideData({
-    required this.titleLine1,
-    required this.titleLine2,
-    required this.description,
-    required this.features,
-    required this.assetPath,
-    required this.caption,
-    this.artWidthFraction = 0.82,
-  });
-
-  final String titleLine1;
-  final String titleLine2;
-  final String description;
-  final List<AnimatedFeatureData> features;
-  final String assetPath;
-  final String caption;
-
-  /// Fraction of screen width the product art renders at — overridden per
-  /// slide so the first three (main/AC/washer) can run a touch bigger than
-  /// the default.
-  final double artWidthFraction;
-}
-
-const _slides = [
-  _SlideData(
-    titleLine1: 'Rent Smart.',
-    titleLine2: 'Live Easy.',
-    description: 'AC, washing machines, refrigerators and more — one app for every premium appliance.',
-    features: [
-      AnimatedFeatureData(
-        icon: Icons.local_shipping_rounded,
-        label: 'Free\nDelivery',
-      ),
-      AnimatedFeatureData(
-        icon: Icons.build_rounded,
-        label: 'Free\nInstallation',
-        labelWeight: FontWeight.w400,
-      ),
-      AnimatedFeatureData(
-        icon: Icons.verified_user_rounded,
-        label: 'Service &\nMaintenance',
-        figmaLabelSize: 12,
-      ),
-    ],
-    assetPath: 'assets/images/main_splash.png',
-    caption: 'Smart Renting, Better Living',
-    artWidthFraction: 0.90,
-  ),
-  _SlideData(
-    titleLine1: 'Rental AC',
-    titleLine2: 'Cool Comfort, On Your Terms',
-    description: 'Rent premium air conditioners with hassle-free installation and maintenance.',
-    features: [
-      AnimatedFeatureData(icon: Icons.ac_unit_rounded, label: 'Fast\nCooling'),
-      AnimatedFeatureData(
-        icon: Icons.build_rounded,
-        label: 'Free\nInstallation',
-        labelWeight: FontWeight.w400,
-      ),
-      AnimatedFeatureData(
-        icon: Icons.verified_user_rounded,
-        label: 'Service &\nMaintenance',
-        figmaLabelSize: 12,
-      ),
-    ],
-    assetPath: 'assets/images/ac_splash.png',
-    caption: 'Stay Cool, Save More',
-    artWidthFraction: 0.90,
-  ),
-  _SlideData(
-    titleLine1: 'Rental Washing Machine',
-    titleLine2: 'Laundry Made Effortless',
-    description: 'Get fully automatic washing machines on rent with free delivery and setup.',
-    features: [
-      AnimatedFeatureData(
-        icon: Icons.local_shipping_rounded,
-        label: 'Free\nDelivery',
-      ),
-      AnimatedFeatureData(
-        icon: Icons.settings_rounded,
-        label: 'Easy\nInstallation',
-        labelWeight: FontWeight.w400,
-      ),
-      AnimatedFeatureData(
-        icon: Icons.shopping_basket_rounded,
-        label: 'Premium\nMachines',
-        figmaLabelSize: 12,
-      ),
-    ],
-    assetPath: 'assets/images/washing_machine_splash.png',
-    caption: 'Fresh Clothes, Zero Hassle',
-    artWidthFraction: 0.90,
-  ),
-  _SlideData(
-    titleLine1: 'Rental Refrigerator',
-    titleLine2: 'Freshness That Lasts',
-    description:
-        'Rent energy-efficient refrigerators for every home and lifestyle.',
-    features: [
-      AnimatedFeatureData(
-        icon: Icons.eco_rounded,
-        label: 'Fresh Food\nStorage',
-        figmaLabelSize: 12,
-      ),
-      AnimatedFeatureData(
-        icon: Icons.bolt_rounded,
-        label: 'Energy\nEfficient',
-        labelWeight: FontWeight.w400,
-      ),
-      AnimatedFeatureData(
-        icon: Icons.handyman_rounded,
-        label: 'Free Service\nSupport',
-        figmaLabelSize: 12,
-      ),
-    ],
-    assetPath: 'assets/images/fridge_splash.png',
-    caption: 'Keep It Fresh, Every Day',
-  ),
-];
-
 class _SplashSliderScreenState extends State<SplashSliderScreen> {
-  final _pageController = PageController();
-  int _page = 0;
-  bool _userInteracted = false;
-  bool _isAnimating = false;
   bool _navigating = false;
-  Timer? _autoTimer;
 
-  static const _slideCount = 4;
-  // 4 slides × 1.8s dwell each, plus the transition itself, then
-  // auto-advance to Home.
-  static const _autoplayInterval = Duration(milliseconds: 1800);
-  static const _transitionDuration = Duration(milliseconds: 500);
-  static const _transitionCurve = Curves.easeInOutCubic;
-
-  @override
-  void initState() {
-    super.initState();
-    _armAutoplay();
-  }
-
-  @override
-  void dispose() {
-    _autoTimer?.cancel();
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _armAutoplay() {
-    _autoTimer?.cancel();
-    if (_userInteracted) return;
-    _autoTimer = Timer(_autoplayInterval, () {
-      if (!mounted || _userInteracted || _isAnimating) return;
-      // Last slide's turn is up — auto-advance straight to Home, same as
-      // tapping the CTA manually would.
-      if (_page >= _slideCount - 1) {
-        _skipToHome();
-        return;
-      }
-      final next = _page + 1;
-      _isAnimating = true;
-      _pageController
-          .animateToPage(next, duration: _transitionDuration, curve: _transitionCurve)
-          .whenComplete(() => _isAnimating = false);
-    });
-  }
-
-  void _onUserInteraction() {
-    if (_userInteracted) return;
-    _userInteracted = true;
-    _autoTimer?.cancel();
-  }
-
-  void _skipToHome() {
+  void _goHome() {
     if (_navigating) return;
     _navigating = true;
     context.go('/home');
-  }
-
-  void _onPageChanged(int i) {
-    setState(() => _page = i);
-    _armAutoplay();
-  }
-
-  void _next() {
-    if (_isAnimating || _navigating) return;
-    _onUserInteraction();
-    if (_page == _slideCount - 1) {
-      _skipToHome();
-    } else {
-      _isAnimating = true;
-      _pageController
-          .nextPage(duration: _transitionDuration, curve: _transitionCurve)
-          .whenComplete(() => _isAnimating = false);
-    }
-  }
-
-  double _currentPageValue() {
-    if (_pageController.hasClients && _pageController.position.haveDimensions) {
-      return _pageController.page ?? _page.toDouble();
-    }
-    return _page.toDouble();
-  }
-
-  /// Depth-card motion: neighbouring slides recede on a subtle 3D tilt
-  /// (perspective + rotateY) rather than the flat scale/fade most carousels
-  /// use, with a cheap alpha-blend dim standing in for a blurred-background
-  /// depth cue — no per-frame [ImageFilter], so it stays smooth even on
-  /// modest hardware. Driven continuously off the live [_pageController]
-  /// value, so it reads identically whether the page change is a manual
-  /// drag or a programmatic [PageController.animateToPage].
-  Widget _withPageTransform(int index, Widget child) {
-    return AnimatedBuilder(
-      animation: _pageController,
-      builder: (context, _) {
-        final t = (index - _currentPageValue()).clamp(-1.0, 1.0);
-        final absT = t.abs();
-        final eased = Curves.easeOutCubic.transform(absT);
-
-        final scale = 1.0 - eased * 0.06;
-        final opacity = (1.0 - eased).clamp(0.0, 1.0);
-        final tilt = t * 0.11;
-        final dx = t * 18.0;
-        final dim = eased * 0.12;
-
-        Widget content = child;
-        if (dim > 0.001) {
-          content = ColorFiltered(
-            colorFilter: ColorFilter.mode(
-              Colors.black.withValues(alpha: dim),
-              BlendMode.srcATop,
-            ),
-            child: content,
-          );
-        }
-
-        return Opacity(
-          opacity: opacity,
-          child: Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.0014)
-              ..translateByDouble(dx, 0, 0, 1)
-              ..rotateY(tilt)
-              ..scaleByDouble(scale, scale, scale, 1),
-            child: content,
-          ),
-        );
-      },
-      child: child,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final contentWidth = size.width > 520 ? 480.0 : size.width;
-    final isLast = _page == _slideCount - 1;
 
     return Scaffold(
       backgroundColor: AppColors.splashBackground.first,
@@ -334,48 +78,82 @@ class _SplashSliderScreenState extends State<SplashSliderScreen> {
                         AppTextStyles.fig(24),
                         0,
                       ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Image.asset(
-                              'assets/images/logo_full.png',
-                              width: contentWidth * 0.48,
-                              fit: BoxFit.contain,
-                            ),
-                            if (!isLast)
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: SkipButton(
-                                  onTap: () {
-                                    _onUserInteraction();
-                                    _skipToHome();
-                                  },
-                                ),
-                              ),
-                          ],
-                        ),
+                      child: Image.asset(
+                        'assets/images/logo_full.png',
+                        width: contentWidth * 0.48,
+                        fit: BoxFit.contain,
                       ),
                     ),
                     Expanded(
-                      child: Listener(
-                        onPointerDown: (_) => _onUserInteraction(),
-                        child: PageView(
-                          controller: _pageController,
-                          onPageChanged: _onPageChanged,
-                          children: [
-                            for (var i = 0; i < _slides.length; i++)
-                              _withPageTransform(
-                                i,
-                                _ApplianceSlide(
-                                  data: _slides[i],
-                                  active: _page == i,
-                                ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppTextStyles.fig(24),
+                            ),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
                               ),
-                          ],
-                        ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  SizedBox(height: AppTextStyles.fig(10)),
+                                  Text(
+                                    'Rent Smart.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles.display(
+                                      figmaSize: 29,
+                                      weight: FontWeight.w800,
+                                      color: AppColors.navy,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Live Easy.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles.display(
+                                      figmaSize: 27,
+                                      weight: FontWeight.w700,
+                                      color: AppColors.purple,
+                                    ),
+                                  ),
+                                  SizedBox(height: AppTextStyles.fig(12)),
+                                  Text(
+                                    'AC, washing machines, refrigerators and '
+                                    'more — one app for every premium '
+                                    'appliance.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles.of(
+                                      figmaSize: 14,
+                                      weight: FontWeight.w400,
+                                      color: AppColors.textGray,
+                                    ),
+                                  ),
+                                  SizedBox(height: AppTextStyles.fig(22)),
+                                  const _FeatureRow(),
+                                  SizedBox(height: AppTextStyles.fig(30)),
+                                  FloatingProductArt(
+                                    assetPath: 'assets/images/main_splash.png',
+                                    width:
+                                        size.width - AppTextStyles.fig(24) * 2,
+                                  ),
+                                  SizedBox(height: AppTextStyles.fig(26)),
+                                  Text(
+                                    'Smart Renting, Better Living',
+                                    style: AppTextStyles.display(
+                                      figmaSize: 18,
+                                      weight: FontWeight.w700,
+                                      color: AppColors.navy,
+                                    ),
+                                  ),
+                                  SizedBox(height: AppTextStyles.fig(12)),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     Padding(
@@ -385,23 +163,9 @@ class _SplashSliderScreenState extends State<SplashSliderScreen> {
                         AppTextStyles.fig(24),
                         AppTextStyles.fig(20),
                       ),
-                      child: isLast
-                          ? Center(
-                              child: PremiumCtaButton(
-                                expanded: true,
-                                onTap: _next,
-                              ),
-                            )
-                          : Row(
-                              children: [
-                                DotIndicator(
-                                  count: _slideCount,
-                                  activeIndex: _page,
-                                ),
-                                const Spacer(),
-                                PremiumCtaButton(expanded: false, onTap: _next),
-                              ],
-                            ),
+                      child: Center(
+                        child: PremiumCtaButton(expanded: true, onTap: _goHome),
+                      ),
                     ),
                   ],
                 ),
@@ -414,107 +178,80 @@ class _SplashSliderScreenState extends State<SplashSliderScreen> {
   }
 }
 
-/// One splash slide: cinematic word-reveal headline, description, feature
-/// badge row, product art (full marketing composition — pedestal, props and
-/// lighting baked in by design), and a bold caption. Every slide shares the
-/// same headline size and art scale for a consistent rhythm.
-class _ApplianceSlide extends StatelessWidget {
-  const _ApplianceSlide({required this.data, required this.active});
+/// Static "Free Delivery / Free Installation / Service & Maintenance" badge
+/// row.
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow();
 
-  static const _titleLine1Size = 29.0;
-  static const _titleLine2Size = 27.0;
-
-  final _SlideData data;
-  final bool active;
+  static const _items = [
+    (
+      icon: Icons.local_shipping_rounded,
+      label: 'Free\nDelivery',
+      weight: FontWeight.w700,
+      figmaLabelSize: 13.0,
+    ),
+    (
+      icon: Icons.build_rounded,
+      label: 'Free\nInstallation',
+      weight: FontWeight.w400,
+      figmaLabelSize: 13.0,
+    ),
+    (
+      icon: Icons.verified_user_rounded,
+      label: 'Service &\nMaintenance',
+      weight: FontWeight.w700,
+      figmaLabelSize: 12.0,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final artWidth = MediaQuery.of(context).size.width * data.artWidthFraction;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: AppTextStyles.fig(24)),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                SizedBox(height: AppTextStyles.fig(10)),
-                CinematicHeading(
-                  active: active,
-                  lines: [
-                    HeadlineLine(
-                      data.titleLine1,
-                      AppTextStyles.display(
-                        figmaSize: _titleLine1Size,
-                        weight: FontWeight.w800,
-                        color: AppColors.navy,
-                        letterSpacing: -0.2,
+    return Container(
+      padding: EdgeInsets.symmetric(
+        vertical: AppTextStyles.fig(18),
+        horizontal: AppTextStyles.fig(10),
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.bgCardPurple,
+        border: Border.all(color: AppColors.divider),
+        borderRadius: BorderRadius.circular(AppTextStyles.fig(35)),
+      ),
+      child: Row(
+        children: [
+          for (final item in _items)
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: AppColors.bgCardPurple,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(item.icon, size: 20, color: AppColors.purple),
+                  ),
+                  SizedBox(height: 40 * 0.14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      item.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.of(
+                        figmaSize: item.figmaLabelSize,
+                        weight: item.weight,
+                        color: AppColors.textGray,
                       ),
                     ),
-                    HeadlineLine(
-                      data.titleLine2,
-                      AppTextStyles.display(
-                        figmaSize: _titleLine2Size,
-                        weight: FontWeight.w700,
-                        color: AppColors.purple,
-                        shadows: [
-                          Shadow(
-                            color: AppColors.purple.withValues(alpha: 0.25),
-                            blurRadius: 14,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: AppTextStyles.fig(12)),
-                FadeSlideIn(
-                  active: active,
-                  delay: const Duration(milliseconds: 160),
-                  child: Text(
-                    data.description,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.of(
-                      figmaSize: 14,
-                      weight: FontWeight.w400,
-                      color: AppColors.textGray,
-                    ),
                   ),
-                ),
-                SizedBox(height: AppTextStyles.fig(22)),
-                AnimatedFeatureRow(items: data.features, active: active),
-                SizedBox(height: AppTextStyles.fig(30)),
-                FadeSlideIn(
-                  active: active,
-                  delay: const Duration(milliseconds: 260),
-                  offset: 24,
-                  child: FloatingProductArt(
-                    assetPath: data.assetPath,
-                    width: artWidth,
-                  ),
-                ),
-                SizedBox(height: AppTextStyles.fig(26)),
-                FadeSlideIn(
-                  active: active,
-                  delay: const Duration(milliseconds: 380),
-                  child: Text(
-                    data.caption,
-                    style: AppTextStyles.display(
-                      figmaSize: 18,
-                      weight: FontWeight.w700,
-                      color: AppColors.navy,
-                    ),
-                  ),
-                ),
-                SizedBox(height: AppTextStyles.fig(12)),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

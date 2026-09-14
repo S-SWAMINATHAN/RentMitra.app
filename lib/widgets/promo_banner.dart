@@ -9,6 +9,7 @@ class PromoBanner extends StatelessWidget {
     this.onViewCombos,
     this.startingPrice,
     this.stretchToFill = false,
+    this.minHeight = 215,
   });
 
   final VoidCallback? onViewCombos;
@@ -27,10 +28,14 @@ class PromoBanner extends StatelessWidget {
   /// height constraints are unbounded", so those use a fixed gap instead.
   final bool stretchToFill;
 
+  /// Minimum card height — scaled up by the caller on tall screens so this
+  /// card grows to use the extra vertical space instead of leaving it blank.
+  final double minHeight;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 215),
+      constraints: BoxConstraints(minHeight: minHeight),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.promoCardBg,
