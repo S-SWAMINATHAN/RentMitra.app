@@ -133,7 +133,7 @@ class _SplashSliderScreenState extends State<SplashSliderScreen> {
                                   ),
                                   SizedBox(height: AppTextStyles.fig(22)),
                                   const _FeatureRow(),
-                                  SizedBox(height: AppTextStyles.fig(30)),
+                                  SizedBox(height: AppTextStyles.fig(46)),
                                   FloatingProductArt(
                                     assetPath: 'assets/images/main_splash.png',
                                     width:
@@ -161,7 +161,7 @@ class _SplashSliderScreenState extends State<SplashSliderScreen> {
                         AppTextStyles.fig(24),
                         0,
                         AppTextStyles.fig(24),
-                        AppTextStyles.fig(20),
+                        AppTextStyles.fig(34),
                       ),
                       child: Center(
                         child: PremiumCtaButton(expanded: true, onTap: _goHome),

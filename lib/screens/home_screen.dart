@@ -11,7 +11,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../utils/rent_pricing.dart';
 import '../utils/whatsapp_launcher.dart';
-import '../widgets/animated_service_icons.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/category_card.dart';
@@ -217,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen>
               icon: AnimatedIcons.menu_close,
               progress: _menuController,
               color: AppColors.navy,
-              size: 17,
+              size: 22,
             ),
           ),
           SizedBox(width: AppTextStyles.fig(10)),
@@ -496,7 +495,7 @@ class _HeroBannerState extends State<_HeroBanner> {
                               TextSpan(
                                 text: 'Rent Smart.\n',
                                 style: AppTextStyles.of(
-                                  figmaSize: 24,
+                                  figmaSize: 27,
                                   weight: FontWeight.w800,
                                   color: AppColors.navy,
                                   height: 1.08,
@@ -505,7 +504,7 @@ class _HeroBannerState extends State<_HeroBanner> {
                               TextSpan(
                                 text: 'Live Easy.',
                                 style: AppTextStyles.of(
-                                  figmaSize: 26,
+                                  figmaSize: 29,
                                   weight: FontWeight.w800,
                                   color: AppColors.purple,
                                   height: 1.08,
@@ -563,6 +562,7 @@ class _HeroBannerState extends State<_HeroBanner> {
                             // chrome pill instead of ellipsizing.
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
                               child: Text(
                                 'AC • Refrigerator • Washing Machine • Combo Plans',
                                 maxLines: 1,
@@ -612,47 +612,31 @@ class _HeroBannerState extends State<_HeroBanner> {
 /// image column's height. Icon-beside-label (badge left, two-line text
 /// right) to match the Figma reference, sized well below [FeatureStrip]'s
 /// full-width treatment since this only has ~1/6 of the screen per item
-/// inside the shared 50%-width hero column. Each icon plays its own
-/// purpose-built animation — a truck driving, a wrench tightening, a gear +
-/// wrench servicing — via [DeliveryTruckIcon], [InstallationIcon] and
-/// [MaintenanceIcon].
+/// inside the shared 50%-width hero column. Static icons (no motion) so
+/// they read cleanly at this small size.
 class _HeroBenefitsRow extends StatelessWidget {
   const _HeroBenefitsRow();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       children: [
         Expanded(
           child: _HeroBenefitItem(
+            icon: Icons.local_shipping_rounded,
             label: 'Free\nDelivery',
-            iconBuilder: (delay) => DeliveryTruckIcon(
-              size: 8,
-              color: AppColors.purple,
-              startDelay: delay,
-            ),
           ),
         ),
         Expanded(
           child: _HeroBenefitItem(
+            icon: Icons.home_repair_service_rounded,
             label: 'Free\nInstallation',
-            iconBuilder: (delay) => InstallationIcon(
-              size: 7,
-              color: AppColors.purple,
-              startDelay: delay,
-            ),
-            startDelay: const Duration(milliseconds: 150),
           ),
         ),
         Expanded(
           child: _HeroBenefitItem(
+            icon: Icons.settings_rounded,
             label: 'Service &\nMaintenance',
-            iconBuilder: (delay) => MaintenanceIcon(
-              size: 7,
-              color: AppColors.purple,
-              startDelay: delay,
-            ),
-            startDelay: const Duration(milliseconds: 300),
           ),
         ),
       ],
@@ -660,16 +644,12 @@ class _HeroBenefitsRow extends StatelessWidget {
   }
 }
 
+/// Static (non-animated) icon-beside-label benefit badge.
 class _HeroBenefitItem extends StatelessWidget {
-  const _HeroBenefitItem({
-    required this.iconBuilder,
-    required this.label,
-    this.startDelay = Duration.zero,
-  });
+  const _HeroBenefitItem({required this.icon, required this.label});
 
-  final Widget Function(Duration delay) iconBuilder;
+  final IconData icon;
   final String label;
-  final Duration startDelay;
 
   @override
   Widget build(BuildContext context) {
@@ -677,13 +657,15 @@ class _HeroBenefitItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 16,
-          height: 16,
+          width: 13,
+          height: 13,
           decoration: const BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
           ),
-          child: Center(child: iconBuilder(startDelay)),
+          child: Center(
+            child: Icon(icon, size: 8, color: AppColors.purple),
+          ),
         ),
         const SizedBox(width: 4.6),
         Flexible(
@@ -692,7 +674,7 @@ class _HeroBenefitItem extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.of(
-              figmaSize: 7,
+              figmaSize: 8.5,
               weight: FontWeight.w600,
               color: AppColors.textGrayMed,
               height: 1.15,
@@ -728,20 +710,16 @@ class _HeroImageSlider extends StatefulWidget {
 
 class _HeroImageSliderState extends State<_HeroImageSlider>
     with TickerProviderStateMixin {
-  // Each slide's source photo has a different amount of built-in empty
-  // margin around the appliance, so BoxFit.contain alone leaves some slides
-  // (AC, washing machine) looking much smaller than others (combo, fridge)
-  // once fit into this slider's portrait-ish box. [_scales] applies a
-  // per-slide extra zoom — tuned by eye against this box's proportions so
-  // the appliance, airflow/water effects and pot plant all stay fully in
-  // frame — to even that out without touching the box's own size.
   static const _images = [
     'assets/images/main_splash.png',
     'assets/images/ac_splash.png',
     'assets/images/fridge_splash.png',
     'assets/images/washing_machine_splash.png',
   ];
-  static const _scales = [1.0, 1.25, 1.1, 1.2];
+  // Uniform across every slide except the fridge photo, which has less
+  // built-in margin than the others and so reads noticeably larger at the
+  // same scale — client feedback: shrink that one slide back down to match.
+  static const _scales = [1.0, 1.0, 0.8, 1.0];
   static const _autoplayInterval = Duration(milliseconds: 3200);
   static const _transitionDuration = Duration(milliseconds: 700);
 

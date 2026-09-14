@@ -43,9 +43,10 @@ class _PremiumCtaButtonState extends State<PremiumCtaButton>
   @override
   Widget build(BuildContext context) {
     const compactSize = 52.0;
+    const expandedWidth = 260.0;
 
     return SizedBox(
-      width: widget.expanded ? 190 : compactSize,
+      width: widget.expanded ? expandedWidth : compactSize,
       height: compactSize,
       child: Stack(
         clipBehavior: Clip.none,
@@ -77,6 +78,7 @@ class _PremiumCtaButtonState extends State<PremiumCtaButton>
                       ? _ExpandedCta(
                           key: const ValueKey('cta-expanded'),
                           size: compactSize,
+                          width: expandedWidth,
                         )
                       : _CompactCta(
                           key: const ValueKey('cta-compact'),
@@ -127,13 +129,15 @@ class _CompactCta extends StatelessWidget {
 }
 
 class _ExpandedCta extends StatelessWidget {
-  const _ExpandedCta({super.key, required this.size});
+  const _ExpandedCta({super.key, required this.size, required this.width});
 
   final double size;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: width,
       height: size,
       padding: const EdgeInsets.symmetric(horizontal: 26),
       decoration: BoxDecoration(
