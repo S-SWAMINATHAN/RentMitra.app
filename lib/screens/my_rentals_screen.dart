@@ -21,6 +21,12 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
   Map<String, dynamic>? _customer;
   List<Map<String, dynamic>> _rentals = [];
 
+  // ============================================================
+  // EXPANDED RENTAL
+  // ============================================================
+
+  String? _expandedRentalId;
+
   int? get _customerId {
     return CustomerSession.instance.customerId;
   }
@@ -77,14 +83,14 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
         _customer = null;
         _rentals = [];
         _errorMessage = null;
+        _expandedRentalId = null;
       });
 
       return;
     }
 
     try {
-      final response =
-          await ApiService.getCustomerRentals(
+      final response = await ApiService.getCustomerRentals(
         customerId: customerId,
       );
 
@@ -93,8 +99,7 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
       final customerData = response['customer'];
 
       if (customerData is Map) {
-        customer =
-            Map<String, dynamic>.from(
+        customer = Map<String, dynamic>.from(
           customerData,
         );
       }
@@ -121,6 +126,19 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
         _customer = customer;
         _rentals = rentals;
         _isLoading = false;
+
+        // Keep the currently expanded card only if it still exists.
+        if (_expandedRentalId != null) {
+          final stillExists = rentals.any(
+            (rental) =>
+                _rentalUniqueId(rental) ==
+                _expandedRentalId,
+          );
+
+          if (!stillExists) {
+            _expandedRentalId = null;
+          }
+        }
       });
     } catch (error) {
       if (!mounted) {
@@ -143,6 +161,64 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
     }
 
     return error;
+  }
+
+  // ============================================================
+  // UNIQUE RENTAL ID
+  // ============================================================
+
+  String _rentalUniqueId(
+    Map<String, dynamic> rental,
+  ) {
+    final rentalId =
+        rental['rental_id']?.toString();
+
+    if (rentalId != null &&
+        rentalId.isNotEmpty) {
+      return 'rental_$rentalId';
+    }
+
+    final orderId =
+        rental['order_id']?.toString();
+
+    if (orderId != null &&
+        orderId.isNotEmpty) {
+      return 'order_$orderId';
+    }
+
+    final productId =
+        rental['product_id']?.toString() ?? '';
+
+    final variantId =
+        rental['variant_id']?.toString() ?? '';
+
+    final productName =
+        rental['product_name']?.toString() ?? '';
+
+    return '${productId}_'
+        '${variantId}_'
+        '${productName}';
+  }
+
+  // ============================================================
+  // TOGGLE RENTAL
+  // ============================================================
+
+  void _toggleRental(
+    Map<String, dynamic> rental,
+  ) {
+    final id = _rentalUniqueId(rental);
+
+    setState(() {
+      if (_expandedRentalId == id) {
+        // Collapse current card.
+        _expandedRentalId = null;
+      } else {
+        // Expand this card and automatically
+        // collapse any other card.
+        _expandedRentalId = id;
+      }
+    });
   }
 
   // ============================================================
@@ -182,6 +258,10 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
       body: _buildBody(),
     );
   }
+
+  // ============================================================
+  // BODY
+  // ============================================================
 
   Widget _buildBody() {
     if (_isLoading) {
@@ -226,8 +306,12 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
           ..._rentals.map(
             (rental) => Padding(
               padding:
-                  const EdgeInsets.only(bottom: 16),
-              child: _buildRentalCard(rental),
+                  const EdgeInsets.only(
+                bottom: 16,
+              ),
+              child: _buildRentalCard(
+                rental,
+              ),
             ),
           ),
         ],
@@ -400,7 +484,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
         rental['quantity']?.toString() ?? '1';
 
     final monthlyRent =
-        _formatMoney(rental['monthly_rent']);
+        _formatMoney(
+      rental['monthly_rent'],
+    );
 
     final paymentStatus =
         rental['payment_status']?.toString() ??
@@ -415,9 +501,20 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
             'New Order';
 
     final startDate =
-        _formatDate(rental['start_date']);
+        _formatDate(
+      rental['start_date'],
+    );
 
-    return Container(
+    final rentalId =
+        _rentalUniqueId(rental);
+
+    final isExpanded =
+        _expandedRentalId == rentalId;
+
+    return AnimatedContainer(
+      duration:
+          const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius:
@@ -432,161 +529,293 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-            // --------------------------------------------------
-            // PRODUCT HEADER
-            // --------------------------------------------------
-
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius:
+            BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius:
+              BorderRadius.circular(20),
+          onTap: () {
+            _toggleRental(rental);
+          },
+          child: Padding(
+            padding:
+                const EdgeInsets.all(18),
+            child: Column(
               crossAxisAlignment:
                   CrossAxisAlignment.start,
               children: [
-                _buildProductIcon(
-                  category: category,
-                  productName: productName,
+                // ==================================================
+                // PRODUCT HEADER
+                // ==================================================
+
+                Row(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.center,
+                  children: [
+                    _buildProductIcon(
+                      category: category,
+                      productName: productName,
+                    ),
+
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            productName,
+                            maxLines: 2,
+                            overflow:
+                                TextOverflow.ellipsis,
+                            style:
+                                AppTextStyles.of(
+                              figmaSize: 17,
+                              weight:
+                                  FontWeight.w700,
+                              color:
+                                  AppColors.navy,
+                            ),
+                          ),
+
+                          if (variantName
+                              .isNotEmpty) ...[
+                            const SizedBox(
+                              height: 4,
+                            ),
+                            Text(
+                              variantName,
+                              maxLines: 1,
+                              overflow:
+                                  TextOverflow
+                                      .ellipsis,
+                              style:
+                                  AppTextStyles.of(
+                                figmaSize: 13,
+                                weight:
+                                    FontWeight.w400,
+                                color:
+                                    AppColors
+                                        .textGray,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    _buildStatusChip(
+                      orderStatus,
+                    ),
+
+                    const SizedBox(width: 2),
+
+                    // ==================================================
+                    // EXPAND ARROW
+                    // ==================================================
+
+                    AnimatedRotation(
+                      turns:
+                          isExpanded ? 0.5 : 0,
+                      duration:
+                          const Duration(
+                        milliseconds: 220,
+                      ),
+                      child: Icon(
+                        Icons
+                            .keyboard_arrow_down_rounded,
+                        color:
+                            AppColors.textGray,
+                        size: 25,
+                      ),
+                    ),
+                  ],
                 ),
 
-                const SizedBox(width: 14),
+                // ==================================================
+                // EXPANDED CONTENT
+                // ==================================================
 
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        productName,
-                        maxLines: 2,
-                        overflow:
-                            TextOverflow.ellipsis,
-                        style: AppTextStyles.of(
-                          figmaSize: 17,
-                          weight:
-                              FontWeight.w700,
+                AnimatedCrossFade(
+                  duration:
+                      const Duration(
+                    milliseconds: 250,
+                  ),
+                  firstCurve:
+                      Curves.easeOut,
+                  secondCurve:
+                      Curves.easeIn,
+                  sizeCurve:
+                      Curves.easeInOut,
+                  crossFadeState:
+                      isExpanded
+                          ? CrossFadeState
+                              .showSecond
+                          : CrossFadeState
+                              .showFirst,
+                  firstChild:
+                      const SizedBox(
+                    width: double.infinity,
+                    height: 0,
+                  ),
+                  secondChild: Padding(
+                    padding:
+                        const EdgeInsets.only(
+                      top: 18,
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment
+                              .start,
+                      children: [
+                        // ------------------------------------------
+                        // DIVIDER
+                        // ------------------------------------------
+
+                        Divider(
+                          height: 1,
                           color:
-                              AppColors.navy,
+                              Colors.grey.shade200,
                         ),
-                      ),
 
-                      if (variantName
-                          .isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          variantName,
-                          style:
-                              AppTextStyles.of(
-                            figmaSize: 13,
-                            weight:
-                                FontWeight.w400,
-                            color: AppColors
-                                .textGray,
+                        const SizedBox(
+                          height: 18,
+                        ),
+
+                        // ------------------------------------------
+                        // RENTAL DETAILS
+                        // ------------------------------------------
+
+                        Container(
+                          padding:
+                              const EdgeInsets
+                                  .all(14),
+                          decoration:
+                              BoxDecoration(
+                            color:
+                                AppColors
+                                    .background,
+                            borderRadius:
+                                BorderRadius
+                                    .circular(
+                              14,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              _buildDetailRow(
+                                label: 'Order ID',
+                                value:
+                                    '#$orderId',
+                              ),
+
+                              const SizedBox(
+                                height: 10,
+                              ),
+
+                              _buildDetailRow(
+                                label: 'Quantity',
+                                value:
+                                    quantity,
+                              ),
+
+                              const SizedBox(
+                                height: 10,
+                              ),
+
+                              _buildDetailRow(
+                                label:
+                                    'Monthly Rent',
+                                value:
+                                    '₹$monthlyRent',
+                                valueBold: true,
+                              ),
+
+                              const SizedBox(
+                                height: 10,
+                              ),
+
+                              _buildDetailRow(
+                                label:
+                                    'Payment',
+                                value:
+                                    paymentStatus,
+                                valueWidget:
+                                    _buildPaymentStatus(
+                                  paymentStatus,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 10,
+                              ),
+
+                              _buildDetailRow(
+                                label:
+                                    'Rental',
+                                value:
+                                    rentalStatus,
+                              ),
+
+                              if (startDate !=
+                                  '-') ...[
+                                const SizedBox(
+                                  height: 10,
+                                ),
+                                _buildDetailRow(
+                                  label:
+                                      'Start Date',
+                                  value:
+                                      startDate,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
+
+                        const SizedBox(
+                          height: 20,
+                        ),
+
+                        // ------------------------------------------
+                        // TIMELINE TITLE
+                        // ------------------------------------------
+
+                        Text(
+                          'Rental Progress',
+                          style:
+                              AppTextStyles.of(
+                            figmaSize: 16,
+                            weight:
+                                FontWeight.w700,
+                            color:
+                                AppColors.navy,
+                          ),
+                        ),
+
+                        const SizedBox(
+                          height: 16,
+                        ),
+
+                        // ------------------------------------------
+                        // TIMELINE
+                        // ------------------------------------------
+
+                        _buildTimeline(
+                          orderStatus,
+                        ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-
-                const SizedBox(width: 8),
-
-                _buildStatusChip(
-                  orderStatus,
                 ),
               ],
             ),
-
-            const SizedBox(height: 18),
-
-            // --------------------------------------------------
-            // RENTAL DETAILS
-            // --------------------------------------------------
-
-            Container(
-              padding:
-                  const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius:
-                    BorderRadius.circular(14),
-              ),
-              child: Column(
-                children: [
-                  _buildDetailRow(
-                    label: 'Order ID',
-                    value: '#$orderId',
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  _buildDetailRow(
-                    label: 'Quantity',
-                    value: quantity,
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  _buildDetailRow(
-                    label: 'Monthly Rent',
-                    value: '₹$monthlyRent',
-                    valueBold: true,
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  _buildDetailRow(
-                    label: 'Payment',
-                    value: paymentStatus,
-                    valueWidget:
-                        _buildPaymentStatus(
-                      paymentStatus,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  _buildDetailRow(
-                    label: 'Rental',
-                    value: rentalStatus,
-                  ),
-
-                  if (startDate != '-') ...[
-                    const SizedBox(height: 10),
-                    _buildDetailRow(
-                      label: 'Start Date',
-                      value: startDate,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // --------------------------------------------------
-            // TIMELINE TITLE
-            // --------------------------------------------------
-
-            Text(
-              'Rental Progress',
-              style: AppTextStyles.of(
-                figmaSize: 16,
-                weight: FontWeight.w700,
-                color: AppColors.navy,
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // --------------------------------------------------
-            // TIMELINE
-            // --------------------------------------------------
-
-            _buildTimeline(orderStatus),
-          ],
+          ),
         ),
       ),
     );
@@ -835,6 +1064,10 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
     );
   }
 
+  // ============================================================
+  // TIMELINE ITEM
+  // ============================================================
+
   Widget _buildTimelineItem({
     required _TimelineStepData step,
     required bool completed,
@@ -896,6 +1129,7 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
                       : Colors.grey.shade500,
                 ),
               ),
+
               if (!isLast)
                 Container(
                   width: 2,
@@ -910,7 +1144,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
             ],
           ),
         ),
+
         const SizedBox(width: 12),
+
         Expanded(
           child: Padding(
             padding:
@@ -931,6 +1167,7 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
                     color: textColor,
                   ),
                 ),
+
                 if (isCurrent) ...[
                   const SizedBox(height: 3),
                   Text(
@@ -944,6 +1181,7 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
                     ),
                   ),
                 ],
+
                 if (!isLast)
                   const SizedBox(
                     height: 20,
@@ -1000,6 +1238,7 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 100),
+
           Icon(
             Icons.home_work_outlined,
             size: 70,
@@ -1008,7 +1247,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
               alpha: 0.45,
             ),
           ),
+
           const SizedBox(height: 20),
+
           Text(
             'No Rentals Yet',
             textAlign: TextAlign.center,
@@ -1018,7 +1259,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
               color: AppColors.navy,
             ),
           ),
+
           const SizedBox(height: 8),
+
           Text(
             'Your rental orders will appear here '
             'after a successful payment.',
@@ -1054,7 +1297,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
                 alpha: 0.45,
               ),
             ),
+
             const SizedBox(height: 20),
+
             Text(
               'No Customer Account',
               textAlign: TextAlign.center,
@@ -1064,7 +1309,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
                 color: AppColors.navy,
               ),
             ),
+
             const SizedBox(height: 8),
+
             Text(
               'Your rentals will appear here after '
               'your first successful payment.',
@@ -1098,7 +1345,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
               size: 60,
               color: Colors.grey.shade500,
             ),
+
             const SizedBox(height: 18),
+
             Text(
               'Unable to Load Rentals',
               textAlign: TextAlign.center,
@@ -1108,7 +1357,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
                 color: AppColors.navy,
               ),
             ),
+
             const SizedBox(height: 8),
+
             Text(
               _errorMessage ??
                   'Something went wrong.',
@@ -1119,7 +1370,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
                 color: AppColors.textGray,
               ),
             ),
+
             const SizedBox(height: 20),
+
             ElevatedButton.icon(
               onPressed: _loadRentals,
               icon: const Icon(
@@ -1145,13 +1398,16 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
     }
 
     final number =
-        double.tryParse(value.toString());
+        double.tryParse(
+      value.toString(),
+    );
 
     if (number == null) {
       return value.toString();
     }
 
-    if (number == number.roundToDouble()) {
+    if (number ==
+        number.roundToDouble()) {
       return number.toInt().toString();
     }
 
@@ -1168,13 +1424,16 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
     }
 
     final date =
-        DateTime.tryParse(value.toString());
+        DateTime.tryParse(
+      value.toString(),
+    );
 
     if (date == null) {
       return '-';
     }
 
-    final localDate = date.toLocal();
+    final localDate =
+        date.toLocal();
 
     const months = [
       'Jan',
@@ -1200,7 +1459,9 @@ class _MyRentalsScreenState extends State<MyRentalsScreen> {
   // DISPLAY STATUS
   // ============================================================
 
-  String _displayStatus(String status) {
+  String _displayStatus(
+    String status,
+  ) {
     switch (status) {
       case 'New Order':
         return 'Order Placed';

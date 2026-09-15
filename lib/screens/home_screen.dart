@@ -176,9 +176,9 @@ class _HomeScreenState extends State<HomeScreen>
                       currentIndex: 0,
                       onTap: (i) {
                         if (i == 1) {
-                          context.go('/my-rentals');
+                          context.push('/my-rentals');
                         } else if (i == 2) {
-                          context.go('/profile');
+                          context.push('/profile');
                         }
                       },
                     ),

@@ -248,13 +248,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                         SizedBox(height: AppTextStyles.fig(26)),
 
-                        _buildFullNameField(),
-
-                        SizedBox(height: AppTextStyles.fig(16)),
-
                         _buildDeliveryHeader(),
 
                         SizedBox(height: AppTextStyles.fig(16)),
+
+                        _buildFullNameField(),
+
+                        SizedBox(height: AppTextStyles.fig(4)),
 
                         _buildAddressField(
                           icon: Icons.home_outlined,

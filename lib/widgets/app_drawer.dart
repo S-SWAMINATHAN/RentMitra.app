@@ -40,13 +40,13 @@ class AppDrawer extends StatelessWidget {
     onClose();
     switch (index) {
       case 0:
-        context.go('/my-rentals');
+        context.push('/my-rentals');
       case 1:
         context.push('/catalog');
       case 2:
         context.push('/offers');
       case 3:
-        context.go('/profile');
+        context.push('/profile');
       case 4:
         context.push('/settings');
     }

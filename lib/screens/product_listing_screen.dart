@@ -178,11 +178,12 @@ class ProductListingScreen extends StatelessWidget {
                   currentIndex: 0,
                   onTap: (i) {
                     if (i == 0) {
+
                       context.go('/home');
                     } else if (i == 1) {
-                      context.go('/my-rentals');
+                      context.push('/my-rentals');
                     } else {
-                      context.go('/profile');
+                      context.push('/profile');
                     }
                   },
                 ),

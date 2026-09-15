@@ -64,9 +64,11 @@ const generateReceiptPdf = async (orderId) => {
         [orderId]
     );
 
+
     if (orderResult.rows.length === 0) {
         throw new Error('Order not found');
     }
+
 
     const order = orderResult.rows[0];
 
@@ -102,9 +104,11 @@ const generateReceiptPdf = async (orderId) => {
         [orderId]
     );
 
+
     if (itemsResult.rows.length === 0) {
         throw new Error('No order items found');
     }
+
 
     const items = itemsResult.rows;
 
@@ -137,6 +141,7 @@ const generateReceiptPdf = async (orderId) => {
         [orderId]
     );
 
+
     const payment =
         paymentResult.rows.length > 0
             ? paymentResult.rows[0]
@@ -146,31 +151,46 @@ const generateReceiptPdf = async (orderId) => {
     // ========================================================
     // 4. CALCULATE AMOUNTS
     // ========================================================
+    //
+    // IMPORTANT:
+    // These calculations intentionally use WHOLE NUMBERS.
+    //
+    // This matches the Checkout and Rental Confirmation
+    // display where GST values are shown without decimals.
+    //
+    // Example:
+    // Subtotal = Rs. 1299
+    // CGST 9%  = Rs. 117
+    // SGST 9%  = Rs. 117
+    // GST      = Rs. 234
+    // Total    = Rs. 1533
+    //
+    // ========================================================
 
     const subtotal =
-        roundMoney(
+        Math.round(
             Number(order.order_amount) || 0
         );
 
+
     const cgst =
-        roundMoney(
+        Math.round(
             subtotal * 0.09
         );
+
 
     const sgst =
-        roundMoney(
+        Math.round(
             subtotal * 0.09
         );
 
+
     const gst =
-        roundMoney(
-            cgst + sgst
-        );
+        cgst + sgst;
+
 
     const totalAmount =
-        roundMoney(
-            subtotal + gst
-        );
+        subtotal + gst;
 
 
     // ========================================================
@@ -185,6 +205,7 @@ const generateReceiptPdf = async (orderId) => {
         )
             .trim()
             .toUpperCase();
+
 
     const verificationStatus =
         String(
@@ -221,11 +242,14 @@ const generateReceiptPdf = async (orderId) => {
         bufferPages: true
     });
 
+
     const chunks = [];
+
 
     doc.on('data', (chunk) => {
         chunks.push(chunk);
     });
+
 
     const pdfFinished = new Promise(
         (resolve, reject) => {
@@ -294,6 +318,7 @@ const generateReceiptPdf = async (orderId) => {
         )
     ];
 
+
     const logoPath =
         possibleLogoPaths.find(
             (filePath) =>
@@ -305,19 +330,23 @@ const generateReceiptPdf = async (orderId) => {
         '========================================'
     );
 
+
     console.log(
         'RECEIPT LOGO CHECK'
     );
+
 
     console.log(
         'Logo path:',
         logoPath || possibleLogoPaths[0]
     );
 
+
     console.log(
         'Logo exists:',
         Boolean(logoPath)
     );
+
 
     console.log(
         '========================================'
@@ -342,6 +371,7 @@ const generateReceiptPdf = async (orderId) => {
                     valign: 'center'
                 }
             );
+
 
             console.log(
                 'RentMitra logo added to PDF successfully'
@@ -387,6 +417,7 @@ const generateReceiptPdf = async (orderId) => {
             }
         );
 
+
     doc
         .font('Helvetica-Bold')
         .fontSize(11)
@@ -421,6 +452,7 @@ const generateReceiptPdf = async (orderId) => {
                 lineBreak: false
             }
         );
+
 
     doc
         .font('Helvetica-Bold')
@@ -461,12 +493,14 @@ const generateReceiptPdf = async (orderId) => {
 
     const infoTop = 143;
 
+
     drawSectionTitle(
         doc,
         'ORDER INFORMATION',
         LEFT,
         infoTop
     );
+
 
     drawInfoRow(
         doc,
@@ -478,6 +512,7 @@ const generateReceiptPdf = async (orderId) => {
         205
     );
 
+
     drawInfoRow(
         doc,
         'Order Date',
@@ -487,6 +522,7 @@ const generateReceiptPdf = async (orderId) => {
         72,
         205
     );
+
 
     drawInfoRow(
         doc,
@@ -505,12 +541,14 @@ const generateReceiptPdf = async (orderId) => {
 
     const PAYMENT_X = 315;
 
+
     drawSectionTitle(
         doc,
         'PAYMENT INFORMATION',
         PAYMENT_X,
         infoTop
     );
+
 
     drawInfoRow(
         doc,
@@ -521,6 +559,7 @@ const generateReceiptPdf = async (orderId) => {
         82,
         195
     );
+
 
     drawInfoRow(
         doc,
@@ -560,6 +599,7 @@ const generateReceiptPdf = async (orderId) => {
             }
         );
 
+
     doc
         .font('Helvetica-Bold')
         .fontSize(8.5)
@@ -587,6 +627,7 @@ const generateReceiptPdf = async (orderId) => {
 
     const customerTop = 240;
     const customerHeight = 112;
+
 
     doc
         .roundedRect(
@@ -630,6 +671,7 @@ const generateReceiptPdf = async (orderId) => {
         customerTop + 15
     );
 
+
     doc
         .font('Helvetica-Bold')
         .fontSize(11)
@@ -640,6 +682,7 @@ const generateReceiptPdf = async (orderId) => {
             customerTop + 40
         );
 
+
     doc
         .font('Helvetica')
         .fontSize(8.5)
@@ -649,6 +692,7 @@ const generateReceiptPdf = async (orderId) => {
             LEFT + 15,
             customerTop + 61
         );
+
 
     doc
         .font('Helvetica')
@@ -675,6 +719,7 @@ const generateReceiptPdf = async (orderId) => {
         customerTop + 15
     );
 
+
     const addressLines = [
         order.house_flat_number,
         order.apartment_name,
@@ -682,9 +727,11 @@ const generateReceiptPdf = async (orderId) => {
         order.landmark
     ].filter(Boolean);
 
+
     if (addressLines.length === 0) {
         addressLines.push('N/A');
     }
+
 
     doc
         .font('Helvetica')
@@ -700,12 +747,14 @@ const generateReceiptPdf = async (orderId) => {
             }
         );
 
+
     const locationLine = [
         order.city,
         order.pincode
     ]
         .filter(Boolean)
         .join(' - ');
+
 
     doc
         .font('Helvetica-Bold')
@@ -727,6 +776,7 @@ const generateReceiptPdf = async (orderId) => {
 
     const rentalTop = 380;
 
+
     drawSectionTitle(
         doc,
         'RENTAL DETAILS',
@@ -744,6 +794,7 @@ const generateReceiptPdf = async (orderId) => {
         rentalTop + 23;
 
     const headerHeight = 30;
+
 
     const PRODUCT_X = LEFT;
     const QTY_X = 350;
@@ -819,27 +870,33 @@ const generateReceiptPdf = async (orderId) => {
     let rowY =
         tableTop + headerHeight;
 
+
     items.forEach(
         (item, index) => {
 
             const quantity =
                 Number(item.quantity) || 1;
 
+
             const monthlyRent =
                 Number(item.monthly_rent) || 0;
+
 
             const productName =
                 item.product_name ||
                 'Rental Product';
 
+
             const variantName =
                 item.variant_name ||
                 '';
+
 
             const displayName =
                 variantName
                     ? `${productName} - ${variantName}`
                     : productName;
+
 
             const rowHeight = 46;
 
@@ -948,6 +1005,7 @@ const generateReceiptPdf = async (orderId) => {
     const summaryTitleY =
         rowY + 28;
 
+
     drawSectionTitle(
         doc,
         'PAYMENT SUMMARY',
@@ -962,10 +1020,13 @@ const generateReceiptPdf = async (orderId) => {
 
     const summaryX = LEFT;
 
+
     const summaryY =
         summaryTitleY + 23;
 
+
     const summaryWidth = WIDTH;
+
 
     const summaryHeaderHeight = 30;
 
@@ -1033,6 +1094,7 @@ const generateReceiptPdf = async (orderId) => {
 
     let summaryRowY =
         summaryY + summaryHeaderHeight;
+
 
     doc
         .rect(
@@ -1287,9 +1349,11 @@ const generateReceiptPdf = async (orderId) => {
         summaryY +
         summaryHeaderHeight;
 
+
     const summaryLine2 =
         summaryLine1 +
         summaryRowHeight;
+
 
     const summaryLine3 =
         summaryLine2 +
@@ -1501,6 +1565,7 @@ const generateReceiptPdf = async (orderId) => {
 
     doc.end();
 
+
     const buffer =
         await pdfFinished;
 
@@ -1608,6 +1673,7 @@ const drawInfoRow = (
             }
         );
 
+
     doc
         .font('Helvetica-Bold')
         .fontSize(8)
@@ -1640,6 +1706,7 @@ const drawSummaryRow = (
     const labelWidth =
         width * 0.58;
 
+
     doc
         .font(
             bold
@@ -1660,6 +1727,7 @@ const drawSummaryRow = (
                 width: labelWidth
             }
         );
+
 
     doc
         .font(
@@ -1694,6 +1762,7 @@ const formatCurrency = (amount) => {
     const numericAmount =
         Number(amount) || 0;
 
+
     return `Rs. ${numericAmount.toFixed(2)}`;
 };
 
@@ -1720,8 +1789,10 @@ const formatDate = (value) => {
         return 'N/A';
     }
 
+
     const date =
         new Date(value);
+
 
     if (
         Number.isNaN(
@@ -1730,6 +1801,7 @@ const formatDate = (value) => {
     ) {
         return 'N/A';
     }
+
 
     return date.toLocaleString(
         'en-IN',
