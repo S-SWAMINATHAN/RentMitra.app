@@ -11,7 +11,7 @@ import 'package:http/http.dart' as http;
 /// http://10.0.2.2:3000
 class CheckoutService {
   // static const String baseUrl = 'http://localhost:3000';
-  static const String baseUrl = 'http://10.177.34.45:3000';
+  static const String baseUrl = 'http://192.168.31.70:3000';
 
   /// Creates a checkout/order in the RentMitra backend.
   static Future<CheckoutResponse> createCheckout({
