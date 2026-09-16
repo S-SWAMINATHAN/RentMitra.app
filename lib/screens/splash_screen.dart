@@ -6,10 +6,12 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../widgets/floating_orbs.dart';
 
-/// Cinematic brand splash: an animated gradient + drifting orb field behind
-/// a fade/scale reveal of the full RentMitra.app logo lockup — held
-/// briefly, then a fade/scale hand-off into the swipeable per-appliance
-/// splash slider.
+/// Launch sequence: a brief (200ms) plain-white frame — caps how long the
+/// near-white native Android launch screen can read as "just white" before
+/// the app takes over — then a cinematic brand splash: animated gradient +
+/// drifting orb field behind a fade/scale reveal of the full RentMitra.app
+/// logo lockup, held for [_brandHold], then a fade/scale hand-off into the
+/// swipeable per-appliance splash slider.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -19,6 +21,9 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
+  static const _whitePhase = Duration(milliseconds: 200);
+  static const _brandHold = Duration(milliseconds: 2600);
+
   late final AnimationController _reveal = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 450),
@@ -28,13 +33,19 @@ class _SplashScreenState extends State<SplashScreen>
     duration: const Duration(seconds: 7),
   )..repeat(reverse: true);
 
+  bool _showWhite = true;
+  Timer? _whiteTimer;
   Timer? _navTimer;
 
   @override
   void initState() {
     super.initState();
-    _reveal.forward();
-    _navTimer = Timer(const Duration(milliseconds: 1000), () {
+    _whiteTimer = Timer(_whitePhase, () {
+      if (!mounted) return;
+      setState(() => _showWhite = false);
+      _reveal.forward();
+    });
+    _navTimer = Timer(_whitePhase + _brandHold, () {
       if (!mounted) return;
       context.go('/splash-slider');
     });
@@ -42,6 +53,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
+    _whiteTimer?.cancel();
     _navTimer?.cancel();
     _reveal.dispose();
     _bg.dispose();
@@ -50,6 +62,10 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_showWhite) {
+      return const Scaffold(backgroundColor: Colors.white);
+    }
+
     final size = MediaQuery.of(context).size;
     final logoStage = CurvedAnimation(
       parent: _reveal,

@@ -90,18 +90,6 @@ class RefrigeratorScreen extends StatelessWidget {
               art: const FridgeSingleDoorProductImage(width: 110),
               price: singleDoorPrice,
               checkoutProduct: CheckoutProduct.refrigeratorSingleDoor,
-              specs: [
-                ProductSpec(
-                  icon: Icons.kitchen_outlined,
-                  label: 'Capacity',
-                  value: '190 L',
-                ),
-                ProductSpec(
-                  icon: Icons.star_outline,
-                  label: 'Star Rating',
-                  value: '3 Star',
-                ),
-              ],
               footerText: _refrigeratorFooterText,
             ),
           ),
@@ -142,18 +130,6 @@ class RefrigeratorScreen extends StatelessWidget {
               art: const FridgeDoubleDoorProductImage(width: 110),
               price: doubleDoorPrice,
               checkoutProduct: CheckoutProduct.refrigeratorDoubleDoor,
-              specs: [
-                ProductSpec(
-                  icon: Icons.kitchen_outlined,
-                  label: 'Capacity',
-                  value: '265 L',
-                ),
-                ProductSpec(
-                  icon: Icons.star_outline,
-                  label: 'Star Rating',
-                  value: '4 Star',
-                ),
-              ],
               footerText: _refrigeratorFooterText,
             ),
           ),

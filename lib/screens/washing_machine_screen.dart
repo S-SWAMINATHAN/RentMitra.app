@@ -87,18 +87,6 @@ class WashingMachineScreen extends StatelessWidget {
               art: const WasherTopLoadImage(width: 110),
               price: topLoadPrice,
               checkoutProduct: CheckoutProduct.washingMachineTopLoad,
-              specs: [
-                ProductSpec(
-                  icon: Icons.local_laundry_service_outlined,
-                  label: 'Capacity',
-                  value: '7 Kg',
-                ),
-                ProductSpec(
-                  icon: Icons.speed,
-                  label: 'Spin Speed',
-                  value: '700 RPM',
-                ),
-              ],
               footerText: _washerFooterText,
             ),
           ),
@@ -138,18 +126,6 @@ class WashingMachineScreen extends StatelessWidget {
               art: const WasherFrontLoadImage(width: 110),
               price: frontLoadPrice,
               checkoutProduct: CheckoutProduct.washingMachineFrontLoad,
-              specs: [
-                ProductSpec(
-                  icon: Icons.local_laundry_service_outlined,
-                  label: 'Capacity',
-                  value: '6 Kg',
-                ),
-                ProductSpec(
-                  icon: Icons.speed,
-                  label: 'Spin Speed',
-                  value: '1000 RPM',
-                ),
-              ],
               footerText: _washerFooterText,
             ),
           ),

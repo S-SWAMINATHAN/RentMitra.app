@@ -101,11 +101,20 @@ void main() {
 
           final (path, extra) = entry.value;
           await tester.pumpWidget(pumpableFor(path, extra));
-          // Home kicks off a fire-and-forget, timeout-bounded GPS lookup in
-          // initState, and Splash/Splash Slider auto-advance on their own
-          // timers; flush well past all of those bounds so no fake-async
-          // Timer outlives the widget tree teardown.
-          await tester.pump(const Duration(seconds: 13));
+          // Home kicks off a fire-and-forget, timeout-bounded (12s) GPS
+          // lookup in initState. Splash (0.2s white + 2.6s brand) and
+          // Splash Slider (2.6s) both auto-advance on their own timers
+          // straight through to Home, so the worst case (pumping Splash
+          // itself) needs to clear 0.2s + 2.6s + 2.6s + 12s before Home's
+          // own GPS timer fires — flush well past that so no fake-async
+          // Timer outlives the widget tree teardown. Pumped in small
+          // increments (rather than one huge jump) so animation packages
+          // that rely on incremental frame progression (e.g.
+          // flutter_animate, used in AppDrawer) settle and clean up their
+          // tickers properly before teardown.
+          for (var i = 0; i < 50; i++) {
+            await tester.pump(const Duration(milliseconds: 500));
+          }
 
           expect(tester.takeException(), isNull);
         }, timeout: const Timeout(Duration(seconds: 30)));

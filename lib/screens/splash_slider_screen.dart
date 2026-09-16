@@ -1,13 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/floating_art.dart';
-import '../widgets/premium_cta_button.dart';
 
-/// Splash screen — a single static hero introducing the app, with a CTA
-/// straight into Home.
+/// Splash slider — a single static hero introducing the app, shown for
+/// [_holdDuration] before automatically handing off into Home. No manual
+/// CTA: the whole launch sequence (white frame → brand splash → this
+/// slider) is fully automatic.
 class SplashSliderScreen extends StatefulWidget {
   const SplashSliderScreen({super.key});
 
@@ -16,7 +19,22 @@ class SplashSliderScreen extends StatefulWidget {
 }
 
 class _SplashSliderScreenState extends State<SplashSliderScreen> {
+  static const _holdDuration = Duration(milliseconds: 2600);
+
   bool _navigating = false;
+  Timer? _navTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _navTimer = Timer(_holdDuration, _goHome);
+  }
+
+  @override
+  void dispose() {
+    _navTimer?.cancel();
+    super.dispose();
+  }
 
   void _goHome() {
     if (_navigating) return;
@@ -156,17 +174,7 @@ class _SplashSliderScreenState extends State<SplashSliderScreen> {
                         },
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        AppTextStyles.fig(24),
-                        0,
-                        AppTextStyles.fig(24),
-                        AppTextStyles.fig(34),
-                      ),
-                      child: Center(
-                        child: PremiumCtaButton(expanded: true, onTap: _goHome),
-                      ),
-                    ),
+                    SizedBox(height: AppTextStyles.fig(34)),
                   ],
                 ),
               ),
